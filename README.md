@@ -8,3 +8,4 @@ Tecnologias que voy a aprender:
 - Python
 - Git y GitHub
 - Docker
+Fecha de inicio: Abril 2026
