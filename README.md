@@ -8,3 +8,7 @@ Tecnologias que voy a aprender:
 - Python
 - Git y GitHub
 - Docker
+
+## Sobre mi
+Soy Director de Software TI en empresa textil.
+Liderando la transformacion digital con IA.
