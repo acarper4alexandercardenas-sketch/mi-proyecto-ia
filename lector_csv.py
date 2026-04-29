@@ -1,4 +1,7 @@
 import csv
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+
 
 def leer_equipo(archivo):
     equipo = []
@@ -33,19 +36,65 @@ def mostrar_resumen(equipo):
     print(f"Areas sin coord.   : {sin_coordinador}")
     print("=" * 45)
 
-def filtrar_por_sistema(equipo, sistema):
+
+
+def filtrar_por_sistema(equipo_filtrado, sistema):
     print(f"\nAreas que usan {sistema}:")
     print("-" * 35)
-    for area in equipo:
-        if sistema.upper() in area['sistema'].upper():
-            print(f"- {area['area']} ({area['personas']} personas)")
+    for area in equipo_filtrado:
+        print(f"- {area['area']} ({area['personas']} personas)")
+        
+
+def exportar_excel(equipo, archivo):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Equipo TI"
+
+    # Encabezados
+    encabezados = ["Area", "Personas", "Sistema", "Coordinador"]
+    for col, encabezado in enumerate(encabezados, 1):
+        celda = ws.cell(row=1, column=col, value=encabezado)
+        celda.font = Font(bold=True, color="FFFFFF")
+        celda.fill = PatternFill(fill_type="solid", fgColor="1F4E79")
+        celda.alignment = Alignment(horizontal="center")
+
+    # Datos
+    for row, area in enumerate(equipo, 2):
+        ws.cell(row=row, column=1, value=area['area'])
+        ws.cell(row=row, column=2, value=int(area['personas']))
+        ws.cell(row=row, column=3, value=area['sistema'])
+        ws.cell(row=row, column=4, value=area['coordinador'])
+
+    # Total
+    total = sum(int(a['personas']) for a in equipo)
+    fila_total = len(equipo) + 2
+    ws.cell(row=fila_total, column=1, value="TOTAL").font = Font(bold=True)
+    ws.cell(row=fila_total, column=2, value=total).font = Font(bold=True)
+
+    # Ancho de columnas
+    ws.column_dimensions['A'].width = 25
+    ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['C'].width = 20
+    ws.column_dimensions['D'].width = 15
+
+    wb.save(archivo)
+    print(f"\nArchivo Excel exportado: {archivo}")
+
 
 
 equipo = leer_equipo('equipo.csv')
 mostrar_resumen(equipo)
 
-sistema_buscar = input("\n¿Qué sistema quieres buscar? ")
-filtrar_por_sistema(equipo, sistema_buscar)
 
+sistema_buscar = input("\n¿Qué sistema quieres buscar? ")
+
+# Filtramos UNA sola vez
+equipo_filtrado = [a for a in equipo if sistema_buscar.upper() in a['sistema'].upper()]
+
+# Usamos el mismo resultado para ambas cosas
+filtrar_por_sistema(equipo_filtrado, sistema_buscar)
+
+nombre_archivo = f"reporte_{sistema_buscar.lower()}.xlsx"
+exportar_excel(equipo_filtrado, nombre_archivo)
 
 
