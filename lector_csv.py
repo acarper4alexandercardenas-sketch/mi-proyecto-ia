@@ -97,4 +97,6 @@ filtrar_por_sistema(equipo_filtrado, sistema_buscar)
 nombre_archivo = f"reporte_{sistema_buscar.lower()}.xlsx"
 exportar_excel(equipo_filtrado, nombre_archivo)
 
+input("\nPresiona Enter para salir...")
+
 
