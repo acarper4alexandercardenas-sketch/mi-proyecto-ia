@@ -3,6 +3,7 @@ import json
 import os
 import ssl
 import sys
+import base64
 import httplib2
 import google_auth_httplib2
 from mcp.server import Server
@@ -19,6 +20,27 @@ SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/gmail.modify',
 ]
+
+def extraer_cuerpo(payload):
+    """Extrae el texto plano del cuerpo del mensaje."""
+    if payload.get('mimeType') == 'text/plain':
+        data = payload.get('body', {}).get('data', '')
+        if data:
+            return base64.urlsafe_b64decode(data).decode('utf-8', errors='replace')
+    if payload.get('mimeType') == 'text/html':
+        data = payload.get('body', {}).get('data', '')
+        if data:
+            texto = base64.urlsafe_b64decode(data).decode('utf-8', errors='replace')
+            # Eliminar tags HTML básicos
+            import re
+            texto = re.sub(r'<[^>]+>', ' ', texto)
+            texto = re.sub(r'\s+', ' ', texto).strip()
+            return texto
+    for part in payload.get('parts', []):
+        resultado = extraer_cuerpo(part)
+        if resultado:
+            return resultado
+    return '(sin contenido)'
 
 def get_gmail_service():
     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
@@ -54,11 +76,14 @@ def leer_correos(filtro=None, max_correos=5):
         fecha = next((h['value'] for h in headers
                      if h['name'] == 'Date'), 'Sin fecha')
 
+        cuerpo = extraer_cuerpo(msg['payload'])
+
         correos.append({
             'id': mensaje['id'],
             'asunto': asunto,
             'remitente': remitente,
-            'fecha': fecha
+            'fecha': fecha,
+            'cuerpo': cuerpo
         })
 
     return correos
@@ -164,7 +189,8 @@ async def call_tool(name: str, arguments: dict):
         for i, c in enumerate(correos, 1):
             resultado += f"{i}. {c['asunto']}\n"
             resultado += f"   De: {c['remitente']}\n"
-            resultado += f"   Fecha: {c['fecha']}\n\n"
+            resultado += f"   Fecha: {c['fecha']}\n"
+            resultado += f"   Contenido: {c['cuerpo'][:500]}{'...' if len(c['cuerpo']) > 500 else ''}\n\n"
 
         return [TextContent(type="text", text=resultado)]
 
